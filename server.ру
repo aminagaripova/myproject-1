@@ -1,42 +1,33 @@
 import socket
+import os
 
+# Создание объекта сокета
+sock_obj = socket.socket()
+# Привязка адреса и порта к сокету
+server_addres = ("localhost", 8000)
+sock_obj.bind(server_addres)
+# Ждем соединение клиента
+sock_obj.listen(5)
+print ("Listening...")
 
-sock = socket.socket()          # Создание сокета
-sock.bind(("localhost", 8000))  # Привязываем сокет к конкретному хосту и порту
+while True:
+    # Установление соединения с клиентом
+    connection, address = sock_obj.accept()
+    # Чтение данных из сокета. 1024 - размер буфера
+    data = connection.recv(1024)
+    res = data.decode("utf-8").split("\n", 1)[0]
+    addr = res.split(" ")[1]
+    if addr == "/index.html" or addr == "/":
+        if os.path.exists("./index.html"):
+            file = open("./index.html", "rb")
+            # Отправка данных
+            connection.send(("HTTP/1.1 200 OK\nContent-Type: text/html\n\n\n").encode() + file.read())
+            file.close()
 
-while 1:
-    sock.listen(1)                  # Указываем сокету начать прослушку с максимальным числом соединений - 1
-    conn, addr = sock.accept()      # Узнаем сокет и IP-адрес подключившегося клиента
-    data = conn.recv(1024)          # Получаем данные, которые отправил клиент
-
-    first_str = data.decode().split("\n", 1)[0]           # Выделяем из сообщения первую строку
-    method, address, protocol = first_str.split(" ", 2)   # Разбиваем первую строку на метод, URL-адрес и версию протокола
-    
-    # Если клиент запросил страницу aboutme.html отсылаем клиенту код этой страницы
-    if address == "/about/aboutme.html" and method == "GET":      
-        file = open('/Users/stiv/GitHub/myproject/about/aboutme.html', 'rb')
-        textHTML = file.read()
-        file.close()
-        answ = b"HTTP/1.1 200 OK\n"
-        answ += b"Server: myserver\n"
-        answ += b"Content-Type: " + b"text/html" + b"\n"
-        answ += b"Connection: close\n"
-        answ += b"\n"
-        answ += textHTML
-        conn.send(answ)
-        
-    # Если клиент запросил страницу index.html отсылаем клиенту код этой страницы
-    if (address == "/index.html" or address == "/") and method == "GET":
-        file = open('/Users/stiv/GitHub/myproject/index.html', 'rb')
-        textHTML = file.read()
-        file.close()
-        answ = b"HTTP/1.1 200 OK\n"
-        answ += b"Server: myserver\n"
-        answ += b"Content-Type: " + b"text/html" + b"\n"
-        answ += b"Connection: close\n"
-        answ += b"\n"
-        answ += textHTML
-        conn.send(answ)
-    conn.close()      # После того как отправили клиенту ответ, закрываем соединение с клиентом
-
-sock.close()
+    elif addr == "/about/aboutme.html":
+            if os.path.exists("." + addr):
+                file = open("." + addr, "rb")
+                connection.send(("HTTP/1.1 200 OK\nContent-Type: text/html\n\n\n").encode() + file.read())
+                file.close()
+    connection.close()
+sock_obj.close()
